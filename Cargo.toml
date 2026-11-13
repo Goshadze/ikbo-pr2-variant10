@@ -1,0 +1,5 @@
+[package]
+name = "depgraph"
+version = "0.1.0"
+edition = "2021"
+description = "Визуализатор графа зависимостей пакетов Ubuntu (apt), этап 1"
