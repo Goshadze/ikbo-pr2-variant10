@@ -3,3 +3,7 @@ name = "depgraph"
 version = "0.1.0"
 edition = "2021"
 description = "Визуализатор графа зависимостей пакетов Ubuntu (apt), этап 1"
+
+[dependencies]
+flate2 = "1.1.11"
+ureq = "3.5.2"

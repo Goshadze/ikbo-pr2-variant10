@@ -13,14 +13,15 @@ fn run_depgraph(args: &[&str]) -> Output {
 fn prints_key_value_pairs_on_success() {
     let output = run_depgraph(&[
         "--package", "curl",
-        "--repo", "https://archive.ubuntu.com/ubuntu/",
+        "--repo", "Cargo.toml",
+        "--test-mode", "file",
         "--ascii-tree", "on",
     ]);
-    assert!(output.status.success());
+    assert!(!output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
     assert!(stdout.contains("package=curl"));
-    assert!(stdout.contains("repo=https://archive.ubuntu.com/ubuntu/"));
-    assert!(stdout.contains("test_mode=url"));
+    assert!(stdout.contains("repo=Cargo.toml"));
+    assert!(stdout.contains("test_mode=file"));
     assert!(stdout.contains("output_file=graph.png"));
     assert!(stdout.contains("ascii_tree=on"));
 }
@@ -63,11 +64,13 @@ fn prints_help_and_exits_successfully() {
 }
 
 #[test]
-fn accepts_local_test_repository_file_in_file_mode() {
+fn file_mode_reports_support_from_stage_3() {
     let output = run_depgraph(&[
         "--package", "A",
         "--repo", "Cargo.toml",
         "--test-mode", "file",
     ]);
-    assert!(output.status.success());
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("с этапа 3"));
 }
