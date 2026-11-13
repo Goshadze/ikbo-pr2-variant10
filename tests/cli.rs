@@ -1,5 +1,6 @@
-//! Интеграционные тесты CLI-интерфейса (этап 1).
+//! Интеграционные тесты CLI-интерфейса, без сети.
 
+use std::path::Path;
 use std::process::{Command, Output};
 
 fn run_depgraph(args: &[&str]) -> Output {
@@ -9,18 +10,25 @@ fn run_depgraph(args: &[&str]) -> Output {
         .expect("бинарный файл depgraph должен быть собран")
 }
 
+fn fixture(name: &str) -> String {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests/fixtures")
+        .join(name)
+        .to_string_lossy()
+        .to_string()
+}
+
 #[test]
 fn prints_key_value_pairs_on_success() {
     let output = run_depgraph(&[
-        "--package", "curl",
-        "--repo", "Cargo.toml",
+        "--package", "A",
+        "--repo", &fixture("cycle.txt"),
         "--test-mode", "file",
         "--ascii-tree", "on",
     ]);
-    assert!(!output.status.success());
+    assert!(output.status.success());
     let stdout = String::from_utf8_lossy(&output.stdout);
-    assert!(stdout.contains("package=curl"));
-    assert!(stdout.contains("repo=Cargo.toml"));
+    assert!(stdout.contains("package=A"));
     assert!(stdout.contains("test_mode=file"));
     assert!(stdout.contains("output_file=graph.png"));
     assert!(stdout.contains("ascii_tree=on"));
@@ -64,13 +72,34 @@ fn prints_help_and_exits_successfully() {
 }
 
 #[test]
-fn file_mode_reports_support_from_stage_3() {
+fn file_mode_prints_graph_in_bfs_order() {
+    let output = run_depgraph(&["--package", "A", "--repo", &fixture("cycle.txt"), "-t", "file"]);
+    assert!(output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).ends_with("A\nB\n"));
+}
+
+#[test]
+fn file_mode_reports_invalid_line_with_number() {
+    let output = run_depgraph(&["--package", "C", "--repo", &fixture("invalid.txt"), "-t", "file"]);
+    assert!(!output.status.success());
+    assert!(String::from_utf8_lossy(&output.stderr).contains("строка 2"));
+}
+
+#[test]
+fn file_mode_applies_substring_filter() {
     let output = run_depgraph(&[
         "--package", "A",
-        "--repo", "Cargo.toml",
-        "--test-mode", "file",
+        "--repo", &fixture("filter.txt"),
+        "-t", "file",
+        "-f", "AB",
     ]);
+    assert!(output.status.success());
+    assert!(String::from_utf8_lossy(&output.stdout).ends_with("A\n"));
+}
+
+#[test]
+fn reports_package_not_found_in_test_file() {
+    let output = run_depgraph(&["--package", "Z", "--repo", &fixture("leaf.txt"), "-t", "file"]);
     assert!(!output.status.success());
-    let stderr = String::from_utf8_lossy(&output.stderr);
-    assert!(stderr.contains("с этапа 3"));
+    assert!(String::from_utf8_lossy(&output.stderr).contains("не найден"));
 }

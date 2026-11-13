@@ -5,6 +5,8 @@
 
 pub mod apt;
 pub mod config;
+pub mod graph;
+pub mod testrepo;
 
 pub use config::{parse_args, Config, TestMode};
 
